@@ -1272,41 +1272,125 @@ button:focus-visible,input:focus-visible,select:focus-visible{
         const clientPhone = document.getElementById('clientPhone').value.replace(/[^0-9+]/g, '') || '0000';
         const clientAddress = document.getElementById('clientAddress').value.trim();
         const filename = `${clientName}_${clientPhone}.xls`;
+        const dateStr = new Date().toLocaleDateString('ru-RU');
 
-        const wsData = [
-            [`СМЕТА ЭЛЕКТРОМАТЕРИАЛОВ ДОМА`, '', '', '', '', ''],
-            [`Клиент: ${clientName}`, '', '', '', '', ''],
-            [`Телефон: ${clientPhone}`, '', '', '', '', ''],
-            [`Адрес: ${clientAddress}`, '', '', '', '', ''],
-            ['Ввод:', inputTypeLabel, '', '', '', ''],
-            ['МАТЕРИАЛЫ', '', '', '', '', ''],
-            ['№', 'Материал', 'Ед.', 'Кол-во', 'Цена за ед.', 'Стоимость']
-        ];
+        let matRows = '';
+        let n = 0;
         document.querySelectorAll('#materialsBody tr').forEach(r => {
             const c = r.cells;
-            wsData.push([c[0].innerText, c[1].innerText, c[2].innerText, c[3].innerText, c[4].innerText, c[5].innerText]);
+            n++;
+            const bg = n % 2 === 0 ? '#f9f9f9' : '#ffffff';
+            matRows += `<tr style="background:${bg}">
+              <td style="text-align:center;width:40px">${c[0].innerText}</td>
+              <td>${c[1].innerText}</td>
+              <td style="text-align:center;width:60px">${c[2].innerText}</td>
+              <td style="text-align:center;width:70px">${c[3].innerText}</td>
+              <td style="text-align:right;width:100px">${c[4].innerText}</td>
+              <td style="text-align:right;width:110px;font-weight:bold">${c[5].innerText}</td>
+            </tr>`;
         });
-        wsData.push(['', '', '', '', 'ИТОГО', document.getElementById('totalCost').innerText]);
-        wsData.push(['', '', '', '']);
-        wsData.push(['СПРАВОЧНАЯ ИНФОРМАЦИЯ', '', '', ''], ['№', 'Наименование работ', 'Ед.', 'Кол-во']);
+
+        let workRows = '';
+        n = 0;
         document.querySelectorAll('#worksBody tr').forEach(r => {
             const c = r.cells;
-            wsData.push([c[0].innerText, c[1].innerText, c[2].innerText, c[3].innerText]);
+            n++;
+            const bg = n % 2 === 0 ? '#f9f9f9' : '#ffffff';
+            workRows += `<tr style="background:${bg}">
+              <td style="text-align:center;width:40px">${c[0].innerText}</td>
+              <td>${c[1].innerText}</td>
+              <td style="text-align:center;width:60px">${c[2].innerText}</td>
+              <td style="text-align:center;width:70px">${c[3].innerText}</td>
+            </tr>`;
         });
-        const csv = wsData.map(row => row.join('\t')).join('\n');
-        const content = "\uFEFF" + csv;
+
+        const totalText = document.getElementById('totalCost').innerText;
+
+        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>
+  body{font-family:Arial,sans-serif;font-size:11px;color:#333}
+  h1{font-size:16px;margin:0 0 4px;color:#1a1a1a}
+  h2{font-size:13px;margin:18px 0 6px;color:#333;border-bottom:2px solid #f5b400;padding-bottom:4px}
+  .info{font-size:11px;color:#666;margin:2px 0}
+  table{border-collapse:cell;width:100%;table-layout:auto}
+  th{background:#161920;color:#f5b400;font-size:10px;text-transform:uppercase;letter-spacing:.04em;
+     padding:6px 8px;text-align:left;border:1px solid #ccc;font-weight:bold}
+  td{padding:5px 8px;border:1px solid #ddd;font-size:11px;white-space:nowrap}
+  .total-row td{background:#161920;color:#f5b400;font-size:13px;font-weight:bold;border:1px solid #ccc}
+  .header-row td{background:#f5b400;color:#000;font-weight:bold;font-size:12px;border:1px solid #ccc}
+  @page{margins:1cm}
+</style>
+</head>
+<body>
+<h1>СМЕТА ЭЛЕКТРОМАТЕРИАЛОВ ДОМА</h1>
+<div class="info">Дата: ${dateStr}</div>
+<div class="info">Клиент: ${clientName}</div>
+<div class="info">Телефон: ${clientPhone}</div>
+<div class="info">Адрес: ${clientAddress}</div>
+<div class="info">Ввод: ${inputTypeLabel}</div>
+
+<h2>МАТЕРИАЛЫ</h2>
+<table>
+<colgroup>
+  <col style="width:40px">
+  <col style="width:auto">
+  <col style="width:60px">
+  <col style="width:70px">
+  <col style="width:100px">
+  <col style="width:110px">
+</colgroup>
+<tr>
+  <th>№</th><th>Материал</th><th>Ед.</th><th>Кол-во</th><th>Цена за ед.</th><th>Стоимость</th>
+</tr>
+${matRows}
+<tr class="total-row">
+  <td colspan="5" style="text-align:right">ИТОГО</td><td style="text-align:right">${totalText}</td>
+</tr>
+</table>
+
+<h2>СПРАВОЧНАЯ ИНФОРМАЦИЯ</h2>
+<table>
+<colgroup>
+  <col style="width:40px">
+  <col style="width:auto">
+  <col style="width:60px">
+  <col style="width:70px">
+</colgroup>
+<tr>
+  <th>№</th><th>Наименование работ</th><th>Ед.</th><th>Кол-во</th>
+</tr>
+${workRows}
+</table>
+</body></html>`;
+
         if (window.AndroidDownload && AndroidDownload.downloadFile) {
-            AndroidDownload.downloadFile(filename, content);
+            AndroidDownload.downloadFile(filename, html);
         } else {
-            const b64 = btoa(unescape(encodeURIComponent(content)));
+            const b64 = btoa(unescape(encodeURIComponent(html)));
             const link = document.createElement('a');
-            link.href = 'data:text/csv;base64,' + b64;
+            link.href = 'data:application/vnd.ms-excel;base64,' + b64;
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
+        const wsData = [];
+        wsData.push(['СМЕТА ЭЛЕКТРОМАТЕРИАЛОВ ДОМА','','','','','']);
+        wsData.push([`Клиент: ${clientName}`,'','','','','']);
+        wsData.push([`Телефон: ${clientPhone}`,'','','','','']);
+        wsData.push([`Адрес: ${clientAddress}`,'','','','','']);
+        wsData.push(['Ввод:',inputTypeLabel,'','','','']);
+        wsData.push(['МАТЕРИАЛЫ','','','','','']);
+        wsData.push(['№','Материал','Ед.','Кол-во','Цена за ед.','Стоимость']);
+        document.querySelectorAll('#materialsBody tr').forEach(r => {
+            const c = r.cells;
+            wsData.push([c[0].innerText, c[1].innerText, c[2].innerText, c[3].innerText, c[4].innerText, c[5].innerText]);
+        });
+        wsData.push(['','','','','ИТОГО', totalText]);
         saveEstimate(clientName, clientPhone, clientAddress, inputTypeLabel, wsData);
     }
 
@@ -1356,15 +1440,104 @@ button:focus-visible,input:focus-visible,select:focus-visible{
         const saved = JSON.parse(localStorage.getItem('electricalEstimates') || '[]');
         const s = saved[idx];
         if (!s) return;
-        const csv = s.data.map(row => row.join('\t')).join('\n');
-        const content = "\uFEFF" + csv;
         const fname = `${s.name}_${s.phone}.xls`;
+
+        let matRows = '';
+        let inWorks = false;
+        let workHeader = '';
+        let workRows = '';
+        let n = 0;
+        s.data.forEach(row => {
+            if (row[0] === '№' && row[1] === 'Материал') {
+                workHeader = row;
+                return;
+            }
+            if (row[0] === '№' && row[1] === 'Наименование работ') {
+                inWorks = true;
+                workHeader = row;
+                return;
+            }
+            if (row[0] === '' && row[4] === 'ИТОГО') {
+                n++;
+                const bg = n % 2 === 0 ? '#f9f9f9' : '#ffffff';
+                matRows += `<tr class="total-row"><td colspan="5" style="text-align:right">ИТОГО</td><td style="text-align:right">${row[5]}</td></tr>`;
+                return;
+            }
+            if (inWorks) {
+                if (!row[0] && !row[1]) return;
+                n++;
+                const bg = n % 2 === 0 ? '#f9f9f9' : '#ffffff';
+                workRows += `<tr style="background:${bg}">
+                  <td style="text-align:center;width:40px">${row[0]}</td>
+                  <td>${row[1]}</td>
+                  <td style="text-align:center;width:60px">${row[2]}</td>
+                  <td style="text-align:center;width:70px">${row[3]}</td>
+                </tr>`;
+                return;
+            }
+            if (!row[0] && !row[1] && !row[2]) return;
+            if (row[0].startsWith('СМЕТА') || row[0].startsWith('Клиент') || row[0].startsWith('Телефон') || row[0].startsWith('Адрес') || row[0] === 'Ввод:' || row[0] === 'МАТЕРИАЛЫ') return;
+            if (row[0] === 'СПРАВОЧНАЯ') return;
+            n++;
+            const bg = n % 2 === 0 ? '#f9f9f9' : '#ffffff';
+            matRows += `<tr style="background:${bg}">
+              <td style="text-align:center;width:40px">${row[0]}</td>
+              <td>${row[1]}</td>
+              <td style="text-align:center;width:60px">${row[2]}</td>
+              <td style="text-align:center;width:70px">${row[3]}</td>
+              <td style="text-align:right;width:100px">${row[4]}</td>
+              <td style="text-align:right;width:110px;font-weight:bold">${row[5]}</td>
+            </tr>`;
+        });
+
+        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>
+  body{font-family:Arial,sans-serif;font-size:11px;color:#333}
+  h1{font-size:16px;margin:0 0 4px;color:#1a1a1a}
+  h2{font-size:13px;margin:18px 0 6px;color:#333;border-bottom:2px solid #f5b400;padding-bottom:4px}
+  .info{font-size:11px;color:#666;margin:2px 0}
+  table{border-collapse:cell;width:100%;table-layout:auto}
+  th{background:#161920;color:#f5b400;font-size:10px;text-transform:uppercase;letter-spacing:.04em;
+     padding:6px 8px;text-align:left;border:1px solid #ccc;font-weight:bold}
+  td{padding:5px 8px;border:1px solid #ddd;font-size:11px;white-space:nowrap}
+  .total-row td{background:#161920;color:#f5b400;font-size:13px;font-weight:bold;border:1px solid #ccc}
+  @page{margins:1cm}
+</style>
+</head>
+<body>
+<h1>СМЕТА ЭЛЕКТРОМАТЕРИАЛОВ ДОМА</h1>
+<div class="info">Дата: ${s.date}</div>
+<div class="info">Клиент: ${s.name}</div>
+<div class="info">Телефон: ${s.phone}</div>
+<div class="info">Адрес: ${s.address || '—'}</div>
+<div class="info">Ввод: ${s.inputType}</div>
+
+<h2>МАТЕРИАЛЫ</h2>
+<table>
+<colgroup>
+  <col style="width:40px">
+  <col style="width:auto">
+  <col style="width:60px">
+  <col style="width:70px">
+  <col style="width:100px">
+  <col style="width:110px">
+</colgroup>
+<tr>
+  <th>№</th><th>Материал</th><th>Ед.</th><th>Кол-во</th><th>Цена за ед.</th><th>Стоимость</th>
+</tr>
+${matRows}
+</table>
+</body></html>`;
+
         if (window.AndroidDownload && AndroidDownload.downloadFile) {
-            AndroidDownload.downloadFile(fname, content);
+            AndroidDownload.downloadFile(fname, html);
         } else {
-            const b64 = btoa(unescape(encodeURIComponent(content)));
+            const b64 = btoa(unescape(encodeURIComponent(html)));
             const link = document.createElement('a');
-            link.href = 'data:text/csv;base64,' + b64;
+            link.href = 'data:application/vnd.ms-excel;base64,' + b64;
             link.setAttribute('download', fname);
             document.body.appendChild(link);
             link.click();
