@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Электрический калькулятор | Нормы ПУЭ</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#eef2f7;font-family:'Segoe UI',Roboto,sans-serif;padding:20px;color:#1e2f4e}
+.container{max-width:1400px;margin:0 auto}
+.header{background:#1e2f4e;border-radius:32px;padding:16px 24px;color:#fff;margin-bottom:24px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center}
+.header h1{font-size:1.5rem;display:flex;align-items:center;gap:10px}
+.header h1 span{background:#ffb74d;padding:4px 12px;border-radius:40px;font-size:.8rem;color:#1e2f4e}
+.btn{border:none;background:#fff;padding:8px 16px;border-radius:40px;font-weight:600;cursor:pointer;transition:.2s;font-family:inherit}
+.btn-outline{background:0 0;border:1px solid #fff;color:#fff}
+.share-btn{background:#25d366;color:#fff;border:none;margin-left:10px}
+.excel-btn{background:#1e6f3f;color:#fff;border:none;margin-left:10px}
+.settings-bar{background:#fff;border-radius:28px;padding:20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:130px}
+.field label{font-size:.7rem;font-weight:600;text-transform:uppercase;color:#5f6c80}
+.field input,.field select{padding:8px 12px;border-radius:24px;border:1px solid #cfddee;font-size:.9rem;background:#fff;width:100%}
+.grid{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:24px}
+.card{flex:1;min-width:320px;background:#fff;border-radius:28px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card h3{font-size:1.2rem;margin-bottom:16px;border-left:4px solid #ffb74d;padding-left:12px}
+.param-row{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px}
+.add-btn{background:#e2e8f0;border:none;padding:6px 12px;border-radius:30px;cursor:pointer;font-size:.75rem;margin-top:4px}
+.result-table{background:#fff;border-radius:28px;padding:20px;overflow-x:auto;margin-top:24px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid #e2e8f0}
+th{background:#f1f5f9;font-weight:700}
+.info-note{background:#fff3e0;border-radius:24px;padding:12px 20px;margin-top:20px;font-size:.85rem}
+.mobile-summary-btn{position:fixed;bottom:20px;right:20px;background:#ffb74d;color:#1e2f4e;border:none;border-radius:50px;padding:12px 18px;font-weight:bold;font-size:14px;cursor:pointer;z-index:30;display:none;box-shadow:0 2px 10px rgba(0,0,0,0.3)}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:100;display:none;justify-content:center;align-items:center}
+.modal-content{background:rgba(20,20,30,0.95);backdrop-filter:blur(12px);border-radius:24px;padding:20px;width:90%;max-width:500px;max-height:80%;overflow-y:auto;color:#fff;border:1px solid rgba(255,255,255,0.2)}
+.close-modal{background:#aa3e3e;border:none;color:#fff;padding:6px 12px;border-radius:30px;cursor:pointer;margin-top:16px;width:100%}
+.price-block{background:#f8fafc;border-radius:24px;padding:16px;margin-top:20px}
+.price-block h4{font-size:1rem;margin-bottom:12px;color:#1e2f4e}
+.price-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.price-item{display:flex;flex-direction:column;gap:4px}
+.price-item label{font-size:.7rem;font-weight:600;color:#5f6c80}
+.price-item input{padding:6px 10px;border-radius:20px;border:1px solid #cfddee;background:#fff}
+@media (max-width:800px){
+    .mobile-summary-btn{display:flex;align-items:center;gap:8px}
+    .result-table.desktop-only{display:none}
+    .price-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}
+@media (min-width:801px){.modal{display:none!important}.mobile-summary-btn{display:none}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>⚡ Электрический калькулятор <span>по нормам ПУЭ</span></h1>
+    <div>
+      <button class="btn btn-outline" id="resetBtn">🔄 Сбросить</button>
+      <button class="btn share-btn" id="copyBtn">📋 Копировать смету</button>
+      <button class="btn excel-btn" id="excelBtn">📎 Excel</button>
+    </div>
+  </div>
+
+  <div class="settings-bar">
+    <div class="field"><label>Тип помещения</label>
+      <select id="roomType">
+        <option value="living">Гостиная/спальня</option>
+        <option value="kitchen">Кухня</option>
+        <option value="bathroom">Ванная/санузел</option>
+        <option value="office">Офис/кабинет</option>
+      </select>
+    </div>
+    <div class="field"><label>Длина (м)</label><input type="number" id="length" value="5" step="0.5"></div>
+    <div class="field"><label>Ширина (м)</label><input type="number" id="width" value="4" step="0.5"></div>
+    <div class="field"><label>Высота (м)</label><input type="number" id="height" value="2.5" step="0.1"></div>
+    <div class="field"><label>Окна</label><input type="number" id="windows" value="1" min="0"></div>
+    <div class="field"><label>Двери</label><input type="number" id="doors" value="1" min="0"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>📐 Нормы и расчёт</h3>
+      <div class="param-row">
+        <div class="field"><label>Периметр (м)</label><input type="text" id="perimeter" readonly style="background:#eef2f8;"></div>
+        <div class="field"><label>Площадь (м²)</label><input type="text" id="area" readonly style="background:#eef2f8;"></div>
+      </div>
+      <div class="param-row">
+        <div class="field"><label>Розетки (по норме)</label><input type="text" id="socketsNorm" readonly style="background:#eef2f8;"></div>
+        <div class="field"><label>Розетки (с запасом)</label><input type="number" id="socketsFinal" step="1" value="0"></div>
+      </div>
+      <div class="param-row">
+        <div class="field"><label>Светильники (норма Лк)</label><input type="text" id="lightsNorm" readonly style="background:#eef2f8;"></div>
+        <div class="field"><label>Светильники (шт.)</label><input type="number" id="lightsFinal" step="1" value="0"></div>
+        <div class="field"><label>Выключатели (шт.)</label><input type="number" id="switchesCount" step="1" value="1"></div>
+      </div>
+      <div class="param-row">
+        <div class="field"><label>Доп. мощные приборы</label><button id="addApplianceBtn" class="add-btn">➕ Добавить прибор</button></div>
+      </div>
+      <div id="appliancesList"></div>
+    </div>
+
+    <div class="card">
+      <h3>🔌 Сечение кабеля и материалы</h3>
+      <div class="param-row">
+        <div class="field"><label>Кабель для розеток (сечение)</label><input type="text" id="cableSockets" readonly style="background:#eef2f8;"></div>
+        <div class="field"><label>Длина трассы (м)</label><input type="number" id="cableLengthSockets" value="20" step="5" readonly style="background:#f0f0f0"></div>
+      </div>
+      <div class="param-row">
+        <div class="field"><label>Кабель для света (сечение)</label><input type="text" id="cableLight" readonly style="background:#eef2f8;"></div>
+        <div class="field"><label>Длина трассы (м)</label><input type="number" id="cableLengthLight" value="15" step="5" readonly style="background:#f0f0f0"></div>
+      </div>
+      <div class="param-row">
+        <div class="field"><label>Автоматы (шт.)</label><input type="number" id="automatCount" value="2" step="1" readonly style="background:#f0f0f0"></div>
+        <div class="field"><label>УЗО (шт.)</label><input type="number" id="uzoCount" value="1" step="1" readonly style="background:#f0f0f0"></div>
+      </div>
+      <div class="param-row">
+        <div class="field"><label>Распред. коробки (шт.)</label><input type="number" id="junctionBoxes" value="3" step="1" readonly style="background:#f0f0f0"></div>
+        <div class="field"><label>Гофра/кабель-канал (м)</label><input type="number" id="conduit" value="30" step="5"></div>
+      </div>
+      <div class="price-block">
+        <h4>💰 Настройка цен (руб)</h4>
+        <div class="price-grid" id="priceGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-table desktop-only" id="summaryDesktop">
+    <h3>📋 Смета материалов и работ</h3>
+    <div style="background:#e8f5e9;border-radius:12px;padding:10px 16px;margin-bottom:12px;font-weight:600;">
+      📦 Распределительные коробки: <span id="totalJboxSummary">0</span> шт
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="materialsTable">
+        <thead><tr><th>№</th><th>Материал</th><th>Ед.</th><th>Кол-во</th><th>Цена за ед.</th><th>Стоимость</th></tr></thead>
+        <tbody id="materialsBody"></tbody>
+        <tfoot><tr style="font-weight:bold;"><td colspan="5">ИТОГО</td><td id="totalCost">0 руб</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="info-note">⚡ Расчёт по ПУЭ: сечение кабеля 2.5 мм² для розеток, 1.5 мм² для освещения. Для мощных приборов сечение рассчитывается автоматически. Количество розеток – по СП 256.1325800.2016 (не реже 1 на каждые 4 м периметра).</div>
+  </div>
+
+  <button id="mobileSummaryBtn" class="mobile-summary-btn">📋 Смета</button>
+  <div id="summaryModal" class="modal">
+    <div class="modal-content">
+      <h3>📋 Смета материалов</h3>
+      <div style="overflow-x:auto;">
+        <table id="modalMaterialsTable">
+          <thead><tr><th>№</th><th>Материал</th><th>Ед.</th><th>Кол-во</th><th>Цена</th><th>Стоимость</th></tr></thead>
+          <tbody id="modalMaterialsBody"></tbody>
+          <tfoot><tr style="font-weight:bold;"><td colspan="5">ИТОГО</td><td id="modalTotalCost">0 руб</td></tr></tfoot>
+        </table>
+      </div>
+      <button class="close-modal" id="closeModalBtn">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+    let prices = {
+        cableVVG_1_5: 87,
+        cableVVG_2_5: 133,
+        cableVVG_4: 210,
+        socket: 267,
+        switch: 247,
+        light: 350,
+        automat: 375,
+        uzo: 3137,
+        junctionBox: 145,
+        conduit: 35,
+        cableClip: 4,
+        cableTie: 1,
+        lug: 23,
+        heatShrink: 82.70,
+        voltageRelay: 4058,
+        crossModule: 1319
+    };
+
+    const priceItems = [
+        { id: 'cableVVG_1_5', label: 'ВВГнг-LS 3x1.5 (м)', default: 87 },
+        { id: 'cableVVG_2_5', label: 'ВВГнг-LS 3x2.5 (м)', default: 133 },
+        { id: 'cableVVG_4', label: 'ВВГнг-LS 3x4 (м)', default: 210 },
+        { id: 'socket', label: 'Розетка AtlasDesign (шт)', default: 267 },
+        { id: 'switch', label: 'Выключатель AtlasDesign (шт)', default: 247 },
+        { id: 'light', label: 'Светильник LED (шт)', default: 350 },
+        { id: 'automat', label: 'Автомат Schneider Easy9 (шт)', default: 375 },
+        { id: 'uzo', label: 'УЗО City9 2P 30мА (шт)', default: 3137 },
+        { id: 'junctionBox', label: 'Коробка распред. Промрукав IP66 (шт)', default: 145 },
+        { id: 'conduit', label: 'Гофра/кабель-канал (м)', default: 35 },
+        { id: 'cableClip', label: 'Площадка для стяжки (шт)', default: 4 },
+        { id: 'cableTie', label: 'Хомут Fortisflex КСС (шт)', default: 1 },
+        { id: 'lug', label: 'Гильза КВТ ГМЛ 6-4 (шт)', default: 23 },
+        { id: 'heatShrink', label: 'Термоусадка Rexant 9/3 (м)', default: 82.70 },
+        { id: 'voltageRelay', label: 'Реле напряжения Welrok D2 63А', default: 4058 },
+        { id: 'crossModule', label: 'Кросс-модуль IEK 4x7 (шт)', default: 1319 }
+    ];
+
+    let appliances = [];
+
+    const doms = {
+        length: document.getElementById('length'),
+        width: document.getElementById('width'),
+        roomType: document.getElementById('roomType'),
+        windows: document.getElementById('windows'),
+        doors: document.getElementById('doors'),
+        perimeter: document.getElementById('perimeter'),
+        area: document.getElementById('area'),
+        socketsNorm: document.getElementById('socketsNorm'),
+        socketsFinal: document.getElementById('socketsFinal'),
+        lightsNorm: document.getElementById('lightsNorm'),
+        lightsFinal: document.getElementById('lightsFinal'),
+        switchesCount: document.getElementById('switchesCount'),
+        cableSockets: document.getElementById('cableSockets'),
+        cableLight: document.getElementById('cableLight'),
+        cableLengthSockets: document.getElementById('cableLengthSockets'),
+        cableLengthLight: document.getElementById('cableLengthLight'),
+        automatCount: document.getElementById('automatCount'),
+        uzoCount: document.getElementById('uzoCount'),
+        junctionBoxes: document.getElementById('junctionBoxes'),
+        conduit: document.getElementById('conduit'),
+        appliancesDiv: document.getElementById('appliancesList')
+    };
+
+    function buildPriceGrid() {
+        const container = document.getElementById('priceGrid');
+        container.innerHTML = '';
+        priceItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'price-item';
+            div.innerHTML = `<label>${item.label}</label><input type="number" id="price_${item.id}" value="${prices[item.id]}" step="1" min="0">`;
+            const input = div.querySelector('input');
+            input.addEventListener('input', (e) => {
+                prices[item.id] = parseFloat(e.target.value) || 0;
+                generateEstimate();
+            });
+            container.appendChild(div);
+        });
+    }
+
+    function calcPerArea(){
+        let L = parseFloat(doms.length.value) || 0;
+        let W = parseFloat(doms.width.value) || 0;
+        let per = 2 * (L + W);
+        let area = L * W;
+        doms.perimeter.value = per.toFixed(2);
+        doms.area.value = area.toFixed(2);
+        return { per, area };
+    }
+
+    function socketsNorm(per, rt){
+        let base = Math.ceil(per / 4);
+        if(rt === 'kitchen') base += 3;
+        if(rt === 'bathroom') base = Math.max(base, 2);
+        return base;
+    }
+
+    function lightsNorm(area, rt){
+        let lux = 150;
+        if(rt === 'kitchen') lux = 300;
+        if(rt === 'office') lux = 400;
+        if(rt === 'bathroom') lux = 150;
+        return Math.max(Math.ceil(area * lux / 1000), 1);
+    }
+
+    function cableForPower(p){
+        if(p <= 3500) return "2.5 мм²";
+        if(p <= 7000) return "4 мм²";
+        if(p <= 12000) return "6 мм²";
+        return "10 мм²";
+    }
+
+    function escapeHtml(str){
+        return str.replace(/[&<>]/g, function(m){
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function renderAppliances(){
+        doms.appliancesDiv.innerHTML = '';
+        appliances.forEach((app, idx) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'background:#f8fafc;border-radius:20px;padding:10px;margin-bottom:12px';
+            div.innerHTML = `
+                <div class="param-row">
+                    <div class="field"><label>Название</label><input type="text" value="${escapeHtml(app.name)}" data-idx="${idx}" class="app-name"></div>
+                    <div class="field"><label>Мощность (Вт)</label><input type="number" value="${app.powerW}" data-idx="${idx}" class="app-power" step="100"></div>
+                    <div class="field"><label>Длина кабеля (м)</label><input type="number" value="${app.length}" data-idx="${idx}" class="app-length" step="1"></div>
+                    <button class="remove-app" data-idx="${idx}" style="background:#aa3e3e;border:none;color:#fff;padding:4px 8px;border-radius:20px;cursor:pointer;margin-top:16px">🗑️</button>
+                </div>
+                <div style="font-size:12px;">Рекомендуемое сечение: <strong>${app.cableSection}</strong></div>`;
+            doms.appliancesDiv.appendChild(div);
+        });
+        document.querySelectorAll('.app-name').forEach(inp => inp.addEventListener('change', (e) => {
+            let idx = parseInt(e.target.dataset.idx);
+            appliances[idx].name = e.target.value;
+            updateAll();
+        }));
+        document.querySelectorAll('.app-power').forEach(inp => inp.addEventListener('change', (e) => {
+            let idx = parseInt(e.target.dataset.idx);
+            appliances[idx].powerW = parseFloat(e.target.value) || 0;
+            appliances[idx].cableSection = cableForPower(appliances[idx].powerW);
+            updateAll();
+        }));
+        document.querySelectorAll('.app-length').forEach(inp => inp.addEventListener('change', (e) => {
+            let idx = parseInt(e.target.dataset.idx);
+            appliances[idx].length = parseFloat(e.target.value) || 0;
+            updateAll();
+        }));
+        document.querySelectorAll('.remove-app').forEach(btn => btn.addEventListener('click', (e) => {
+            let idx = parseInt(btn.dataset.idx);
+            appliances.splice(idx, 1);
+            renderAppliances();
+            updateAll();
+        }));
+    }
+
+    function addAppliance(){
+        appliances.push({
+            name: `Прибор ${appliances.length + 1}`,
+            powerW: 2000,
+            length: 5,
+            cableSection: "2.5 мм²"
+        });
+        renderAppliances();
+        updateAll();
+    }
+
+    function updateAll(){
+        const { per, area } = calcPerArea();
+        const rt = doms.roomType.value;
+        const sn = socketsNorm(per, rt);
+        doms.socketsNorm.value = sn;
+        if(!doms.socketsFinal.value || parseFloat(doms.socketsFinal.value) < sn) doms.socketsFinal.value = sn;
+        const ln = lightsNorm(area, rt);
+        doms.lightsNorm.value = ln;
+        if(!doms.lightsFinal.value || parseFloat(doms.lightsFinal.value) < ln) doms.lightsFinal.value = ln;
+        doms.cableSockets.value = "2.5 мм² (медь)";
+        doms.cableLight.value = "1.5 мм² (медь)";
+        const L = parseFloat(doms.length.value) || 0;
+        const W = parseFloat(doms.width.value) || 0;
+        const autoLightLen = (((L + W) * 1.5) + 40) * 2;
+        const autoSockLen = (((L + W) * 3) + 80) * 2;
+        doms.cableLengthLight.value = autoLightLen;
+        doms.cableLengthSockets.value = autoSockLen;
+        const autoJbox = (lights > 0 ? 1 : 0) + (sockets > 0 ? 3 : 0);
+        doms.junctionBoxes.value = autoJbox;
+
+        // Автоматы и УЗО
+        let autoLightAut = 0;
+        let autoSocketAut = 0;
+        let autoUzo = 0;
+        if (lights > 0) autoLightAut++; // 10А на освещение
+        if (sockets > 0) autoSocketAut++; // 16А на розетки
+        const isLiving = (rt === 'living' || rt === 'office');
+        if (isLiving && (lights > 0 || sockets > 0)) autoUzo++;
+        const acPower = parseFloat(document.querySelector('.room-ac')?.value) || 0;
+        if (acPower > 0) { autoUzo++; autoSocketAut++; }
+        const autoAut = autoLightAut + autoSocketAut;
+        doms.automatCount.value = autoAut;
+        doms.uzoCount.value = autoUzo;
+
+        generateEstimate();
+    }
+
+    function generateEstimate(){
+        const sockets = parseFloat(doms.socketsFinal.value) || 0;
+        const lights = parseFloat(doms.lightsFinal.value) || 0;
+        const switches = parseFloat(doms.switchesCount.value) || 0;
+        const cableSockLen = parseFloat(doms.cableLengthSockets.value) || 0;
+        const cableLightLen = parseFloat(doms.cableLengthLight.value) || 0;
+        const uzo = parseFloat(doms.uzoCount.value) || 0;
+        const jbox = parseFloat(doms.junctionBoxes.value) || 0;
+        const cond = parseFloat(doms.conduit.value) || 0;
+
+        let autoLightAut = 0;
+        let autoSocketAut = 0;
+        if (lights > 0) autoLightAut++;
+        if (sockets > 0) autoSocketAut++;
+        const rt = doms.roomType.value;
+        const isLiving = (rt === 'living' || rt === 'office');
+        const acPower = parseFloat(document.querySelector('.room-ac')?.value) || 0;
+        if (acPower > 0) autoSocketAut++;
+        const autoAut = autoLightAut + autoSocketAut;
+        doms.automatCount.value = autoAut;
+
+        const totalLightCable = cableLightLen;
+        let materials = [
+            { name: `Кабель ВВГ-П 3x1.5 (${totalLightCable.toFixed(0)} м)`, unit: "м", qty: totalLightCable, price: prices.cableVVG_1_5 },
+            { name: `Кабель ВВГ-П 3x2.5 (${cableSockLen.toFixed(0)} м)`, unit: "м", qty: cableSockLen, price: prices.cableVVG_2_5 },
+            { name: "Точки электроустановки", unit: "шт", qty: sockets, price: 0 },
+            { name: "Точки освещения", unit: "шт", qty: lights, price: 0 },
+            { name: "Выключатели", unit: "шт", qty: switches, price: 0 },
+            { name: `Автоматические выключатели 10А (освещение) — ${autoLightAut} шт`, unit: "шт", qty: autoLightAut, price: prices.automat },
+            { name: `Автоматические выключатели 16А (розетки) — ${autoSocketAut} шт`, unit: "шт", qty: autoSocketAut, price: prices.automat },
+            { name: "УЗО", unit: "шт", qty: uzo, price: prices.uzo },
+            { name: "Реле контроля напряжения Welrok D2 63А", unit: "шт", qty: 1, price: prices.voltageRelay },
+            { name: "Кросс-модуль IEK 4x7 групп", unit: "шт", qty: 1, price: prices.crossModule },
+            { name: `Модули щита (итого): ${autoLightAut + autoSocketAut + (uzo * 2) + 4 + 4} мод.`, unit: "шт", qty: autoLightAut + autoSocketAut + (uzo * 2) + 4 + 4, price: 0 },
+            { name: "Распределительные коробки", unit: "шт", qty: jbox, price: prices.junctionBox },
+            { name: "Гильза КВТ ГМЛ 6-4 медная луженая", unit: "шт", qty: jbox * 5, price: prices.lug },
+            { name: "Термоусадка Rexant 9/3 клеевая", unit: "м", qty: jbox * 0.5, price: prices.heatShrink },
+            { name: "Гофра/кабель-канал", unit: "м", qty: cond, price: prices.conduit },
+            { name: "Площадка для стяжки Промрукав", unit: "шт", qty: (cableSockLen + totalLightCable) * 2, price: prices.cableClip },
+            { name: "Хомут Fortisflex КСС 3.5x200", unit: "шт", qty: (cableSockLen + totalLightCable) * 2, price: prices.cableTie }
+        ];
+
+        appliances.forEach(app => {
+            let cablePrice = 0, secName = "";
+            if(app.cableSection === "2.5 мм²") { cablePrice = prices.cableVVG_2_5; secName = "ВВГ 3x2.5"; }
+            else if(app.cableSection === "4 мм²") { cablePrice = prices.cableVVG_4; secName = "ВВГ 3x4"; }
+            else if(app.cableSection === "6 мм²") { cablePrice = 95; secName = "ВВГ 3x6"; }
+            else { cablePrice = 150; secName = "ВВГ 3x10"; }
+            if(app.length > 0) materials.push({ name: `Кабель для "${app.name}" (${secName})`, unit: "м", qty: app.length, price: cablePrice });
+            materials.push({ name: `Розетка силовая (${app.name})`, unit: "шт", qty: 1, price: 250 });
+        });
+
+        let total = 0;
+        const rows = materials.map(m => {
+            const cost = m.qty * m.price;
+            total += cost;
+            return { ...m, cost };
+        });
+
+        const tbody = document.getElementById('materialsBody');
+        if(tbody){
+            tbody.innerHTML = '';
+            rows.forEach((r, i) => {
+                const tr = tbody.insertRow();
+                tr.insertCell(0).innerText = i + 1;
+                tr.insertCell(1).innerText = r.name;
+                tr.insertCell(2).innerText = r.unit;
+                tr.insertCell(3).innerText = r.qty.toFixed(1);
+                tr.insertCell(4).innerText = r.price.toFixed(2);
+                tr.insertCell(5).innerText = r.cost.toFixed(2) + ' руб';
+            });
+        }
+        document.getElementById('totalCost').innerText = total.toFixed(2) + ' руб';
+        document.getElementById('totalJboxSummary').innerText = jbox;
+
+        const mbody = document.getElementById('modalMaterialsBody');
+        if(mbody){
+            mbody.innerHTML = '';
+            rows.forEach((r, i) => {
+                const tr = mbody.insertRow();
+                tr.insertCell(0).innerText = i + 1;
+                tr.insertCell(1).innerText = r.name;
+                tr.insertCell(2).innerText = r.unit;
+                tr.insertCell(3).innerText = r.qty.toFixed(1);
+                tr.insertCell(4).innerText = r.price.toFixed(2);
+                tr.insertCell(5).innerText = r.cost.toFixed(2) + ' руб';
+            });
+        }
+        document.getElementById('modalTotalCost').innerText = total.toFixed(2) + ' руб';
+    }
+
+    function copySummary(){
+        let msg = "📋 СМЕТА ЭЛЕКТРОМАТЕРИАЛОВ\n\n";
+        document.querySelectorAll('#materialsBody tr').forEach(r => {
+            const c = r.cells;
+            msg += `${c[0].innerText}. ${c[1].innerText}: ${c[3].innerText} ${c[2].innerText} — ${c[5].innerText}\n`;
+        });
+        msg += `\n💰 ИТОГО: ${document.getElementById('totalCost').innerText}`;
+        navigator.clipboard.writeText(msg).then(() => alert('Смета скопирована')).catch(() => alert('Ошибка копирования'));
+    }
+
+    function exportExcel(){
+        const wsData = [['№', 'Материал', 'Ед.', 'Кол-во', 'Цена за ед.', 'Стоимость']];
+        document.querySelectorAll('#materialsBody tr').forEach(r => {
+            const c = r.cells;
+            wsData.push([c[0].innerText, c[1].innerText, c[2].innerText, c[3].innerText, c[4].innerText, c[5].innerText]);
+        });
+        wsData.push(['', '', '', '', 'ИТОГО', document.getElementById('totalCost').innerText]);
+        const csv = wsData.map(row => row.join('\t')).join('\n');
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', 'смета_электрика.xls');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function resetAll(){
+        doms.length.value = '5';
+        doms.width.value = '4';
+        doms.height.value = '2.5';
+        doms.windows.value = '1';
+        doms.doors.value = '1';
+        doms.roomType.value = 'living';
+        doms.switchesCount.value = '1';
+        doms.conduit.value = '30';
+        appliances = [];
+        priceItems.forEach(item => {
+            prices[item.id] = item.default;
+            const input = document.getElementById(`price_${item.id}`);
+            if(input) input.value = item.default;
+        });
+        renderAppliances();
+        updateAll();
+    }
+
+    document.getElementById('addApplianceBtn').addEventListener('click', addAppliance);
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    document.getElementById('copyBtn').addEventListener('click', copySummary);
+    document.getElementById('excelBtn').addEventListener('click', exportExcel);
+
+    doms.length.addEventListener('input', updateAll);
+    doms.width.addEventListener('input', updateAll);
+    doms.roomType.addEventListener('change', updateAll);
+    doms.windows.addEventListener('input', updateAll);
+    doms.doors.addEventListener('input', updateAll);
+    doms.socketsFinal.addEventListener('input', updateAll);
+    doms.lightsFinal.addEventListener('input', updateAll);
+    doms.switchesCount.addEventListener('input', updateAll);
+    // doms.cableLengthSockets.addEventListener('input', updateAll); // авто-расчёт
+    // doms.cableLengthLight.addEventListener('input', updateAll); // авто-расчёт
+    // doms.automatCount.addEventListener('input', updateAll); // авто-расчёт
+    // doms.uzoCount.addEventListener('input', updateAll); // авто-расчёт
+    // doms.junctionBoxes.addEventListener('input', updateAll); // авто-расчёт
+    doms.conduit.addEventListener('input', updateAll);
+
+    const modal = document.getElementById('summaryModal');
+    const mobileBtn = document.getElementById('mobileSummaryBtn');
+    const closeModal = document.getElementById('closeModalBtn');
+    if(mobileBtn){
+        mobileBtn.addEventListener('click', () => {
+            generateEstimate();
+            modal.style.display = 'flex';
+        });
+    }
+    if(closeModal){
+        closeModal.addEventListener('click', () => modal.style.display = 'none');
+        modal.addEventListener('click', (e) => {
+            if(e.target === modal) modal.style.display = 'none';
+        });
+    }
+
+    buildPriceGrid();
+    updateAll();
+    renderAppliances();
+})();
+</script>
+</body>
+</html>

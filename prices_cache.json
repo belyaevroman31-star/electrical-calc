@@ -1,0 +1,20 @@
+{
+  "cableVVG_1_5": 87,
+  "cableVVG_2_5": 133,
+  "cableVVG_4": 210,
+  "cableVVG_6": 310,
+  "cableVVG_10": 520,
+  "cableOutdoor_2_5": 120,
+  "cableOutdoor_4": 195,
+  "automat": 375,
+  "uzo": 3137,
+  "junctionBox": 145,
+  "conduit": 35,
+  "cableClip": 4,
+  "cableTie": 1,
+  "lug": 23,
+  "heatShrink": 82.70,
+  "voltageRelay": 4058,
+  "crossModule": 1319,
+  "panel": 3500
+}
