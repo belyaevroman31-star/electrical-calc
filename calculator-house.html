@@ -414,7 +414,9 @@ tfoot td{color:var(--amber-bright);font-weight:700;font-size:15px;border-top:1px
   font-size:14px;
   cursor:pointer;
   z-index:30;
-  display:none;
+  display:flex;
+  align-items:center;
+  gap:8px;
   box-shadow:0 4px 14px rgba(245,180,0,0.28);
 }
 
@@ -474,7 +476,6 @@ tfoot td{color:var(--amber-bright);font-weight:700;font-size:15px;border-top:1px
   body{padding:20px 12px 40px;}
   .panel{padding:16px;}
   .room-card{min-width:100%;}
-  .mobile-summary-btn{display:flex;align-items:center;gap:8px;}
   .result-table.desktop-only{display:none;}
   .price-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
   .total-banner{flex-direction:column;text-align:center;}
@@ -484,7 +485,7 @@ tfoot td{color:var(--amber-bright);font-weight:700;font-size:15px;border-top:1px
   h1{font-size:26px;}
   .subtitle{font-size:15px;}
 }
-@media(min-width:801px){.modal{display:none!important;}.mobile-summary-btn{display:none;}}
+@media(min-width:801px){}
 
 /* print */
 @media print{
@@ -716,7 +717,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{
     <button class="btn btn-danger" id="resetBtn">🔄 Сбросить</button>
     <button class="btn btn-secondary" id="copyBtn">📋 Копировать смету</button>
     <button class="btn btn-primary" id="excelBtn">📎 Скачать Excel</button>
-    <button class="btn btn-secondary" id="savedBtn">📂 Сохранённые сметы</button>
+    <button class="btn btn-secondary" id="smetaBtn">💰 Смета</button>
+    <button class="btn btn-secondary" id="savedBtn">📂 История</button>
   </div>
 
 </div>
@@ -1292,9 +1294,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{
             wsData.push([c[0].innerText, c[1].innerText, c[2].innerText, c[3].innerText]);
         });
         const csv = wsData.map(row => row.join('\t')).join('\n');
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const b64 = btoa(unescape(encodeURIComponent("\uFEFF" + csv)));
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
+        link.href = 'data:text/csv;base64,' + b64;
         link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
@@ -1318,7 +1320,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{
 
     function showSavedEstimates() {
         const saved = JSON.parse(localStorage.getItem('electricalEstimates') || '[]');
-        const modal = document.getElementById('pricesModal');
+        const modal = document.getElementById('summaryModal');
         let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="margin:0;color:#f5b400;">📂 Сохранённые сметы</h3></div>';
         if (saved.length === 0) {
             html += '<p style="color:#8b93a1;">Нет сохранённых смет. Скачайте Excel для сохранения.</p>';
@@ -1350,9 +1352,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{
         const s = saved[idx];
         if (!s) return;
         const csv = s.data.map(row => row.join('\t')).join('\n');
-        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const b64 = btoa(unescape(encodeURIComponent("\uFEFF" + csv)));
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
+        link.href = 'data:text/csv;base64,' + b64;
         link.setAttribute('download', `${s.name}_${s.phone}.xls`);
         document.body.appendChild(link);
         link.click();
@@ -1435,11 +1437,32 @@ button:focus-visible,input:focus-visible,select:focus-visible{
     document.getElementById('savedBtn').addEventListener('click', showSavedEstimates);
 
     const modal = document.getElementById('summaryModal');
-    document.getElementById('mobileSummaryBtn').addEventListener('click', () => {
+
+    function showSmetaModal() {
+        modal.querySelector('.modal-content').innerHTML = `
+      <h3>💰 Смета материалов</h3>
+      <div style="overflow-x:auto;">
+        <table id="modalMaterialsTable">
+          <thead><tr><th>№</th><th>Материал</th><th>Ед.</th><th>Кол-во</th><th>Цена</th><th>Стоимость</th></tr></thead>
+          <tbody id="modalMaterialsBody"></tbody>
+          <tfoot><tr style="font-weight:bold;"><td colspan="5">ИТОГО</td><td id="modalTotalCost">0 руб</td></tr></tfoot>
+        </table>
+      </div>
+      <h3>📋 Справочная информация</h3>
+      <div style="overflow-x:auto;">
+        <table id="modalWorksTable">
+          <thead><tr><th>№</th><th>Наименование работ</th><th>Ед.</th><th>Кол-во</th></tr></thead>
+          <tbody id="modalWorksBody"></tbody>
+        </table>
+      </div>
+      <button class="close-modal" id="closeModalBtn2">Закрыть</button>`;
         generateEstimate();
         modal.style.display = 'flex';
-    });
-    document.getElementById('closeModalBtn').addEventListener('click', () => modal.style.display = 'none');
+        document.getElementById('closeModalBtn2').addEventListener('click', () => modal.style.display = 'none');
+    }
+
+    document.getElementById('smetaBtn').addEventListener('click', showSmetaModal);
+    document.getElementById('mobileSummaryBtn').addEventListener('click', showSmetaModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 
     buildPriceGrid();
