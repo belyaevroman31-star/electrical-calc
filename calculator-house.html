@@ -1294,13 +1294,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{
             wsData.push([c[0].innerText, c[1].innerText, c[2].innerText, c[3].innerText]);
         });
         const csv = wsData.map(row => row.join('\t')).join('\n');
-        const b64 = btoa(unescape(encodeURIComponent("\uFEFF" + csv)));
-        const link = document.createElement('a');
-        link.href = 'data:text/csv;base64,' + b64;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const content = "\uFEFF" + csv;
+        if (window.AndroidDownload && AndroidDownload.downloadFile) {
+            AndroidDownload.downloadFile(filename, content);
+        } else {
+            const b64 = btoa(unescape(encodeURIComponent(content)));
+            const link = document.createElement('a');
+            link.href = 'data:text/csv;base64,' + b64;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         saveEstimate(clientName, clientPhone, clientAddress, inputTypeLabel, wsData);
     }
@@ -1352,13 +1357,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{
         const s = saved[idx];
         if (!s) return;
         const csv = s.data.map(row => row.join('\t')).join('\n');
-        const b64 = btoa(unescape(encodeURIComponent("\uFEFF" + csv)));
-        const link = document.createElement('a');
-        link.href = 'data:text/csv;base64,' + b64;
-        link.setAttribute('download', `${s.name}_${s.phone}.xls`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const content = "\uFEFF" + csv;
+        const fname = `${s.name}_${s.phone}.xls`;
+        if (window.AndroidDownload && AndroidDownload.downloadFile) {
+            AndroidDownload.downloadFile(fname, content);
+        } else {
+            const b64 = btoa(unescape(encodeURIComponent(content)));
+            const link = document.createElement('a');
+            link.href = 'data:text/csv;base64,' + b64;
+            link.setAttribute('download', fname);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     };
 
     window.deleteSaved = function(idx) {
